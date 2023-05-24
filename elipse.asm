@@ -15,6 +15,8 @@ y dw 0
 
 key_code db 0
 
+color db 15
+
 exception_msg db "Blad danych wejsciowych$"
 
 data ends
@@ -67,6 +69,7 @@ start:
 
 gui_exit:
     ; /WYJŚCIE Z TRYBU GRAFICZNEGO/
+    call clear_screen
     mov al, 3h
     xor ah, ah
     int 10h
@@ -129,6 +132,9 @@ parse_arg:
         inc si
         jmp parse_loop
     parse_end:
+        cmp ax, 200
+        jg exception
+
         mov bx, 2
         div bx
         mov word ptr es:[di], ax
@@ -169,7 +175,7 @@ show_point:
 
     mov ax, 0A000h
     mov ds, ax
-    mov al, 13
+    mov al, byte ptr es:[color]
     mov byte ptr ds:[bx], al
 
     ret
@@ -246,15 +252,6 @@ draw_elipse:
     
     ret
 
-swap_x_y:
-    mov ax, word ptr es:[x]
-    mov bx, word ptr es:[y]
-    mov word ptr es:[x], bx
-    mov word ptr es:[y], ax
-
-    ret
-
-
 find_y:
     finit
 
@@ -308,6 +305,12 @@ handle_key:
     cmp al, 80
     je down_key
 
+    cmp al, 57
+    je space_key
+
+    cmp al, 24
+    je o_key
+
     key_end:
         ret
 
@@ -328,6 +331,16 @@ handle_key:
 
     down_key:
         dec word ptr es:[y_ax]
+        call draw_elipse
+        ret
+
+    space_key:
+        call change_color
+        call draw_elipse
+        ret
+
+    o_key:
+        call make_circle
         call draw_elipse
         ret
 
@@ -358,7 +371,31 @@ check_bnd:
     check_bnd_end:
         ret
 
+change_color:
+    mov al, byte ptr es:[color]
+    inc al
+    cmp al, 16
+    je reset_color
+    mov byte ptr es:[color], al
+    ret
 
+    reset_color:
+        mov byte ptr es:[color], 1
+        ret
+
+make_circle:
+    mov ax, word ptr es:[x_ax]
+    mov bx, word ptr es:[y_ax]
+
+    cmp ax, bx
+    jge x_bigger
+
+    mov word ptr es:[y_ax], ax
+    ret
+
+    x_bigger:
+        mov word ptr es:[x_ax], bx
+        ret
 
 
 
